@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+rm /autograder/submission/assignment/test_assignment.py
+
+cp /autograder/source/test_assignment.py /autograder/submission/assignment/
+
+cd /autograder/submission
+
+# Skip poetry install since dependencies are pre-installed in container
+python3 /autograder/source/run_tests.py
