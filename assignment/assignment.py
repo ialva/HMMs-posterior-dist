@@ -34,35 +34,8 @@ def posterior_decode(observation_seq: List[int], hmm) -> List[str]:
        forward and backward matrices, normalized at each observation.
     """
     # YOUR CODE HERE
-    # <snip>
-    posterior_probs = _posterior_probabilities(observation_seq, hmm)
-    numeric_state_seq = [_max_position(row) for row in posterior_probs]
-    return [hmm.states[i] for i in numeric_state_seq]
-    #</snip>
 
     # DEFINE _posterior_probabilites here
-    #<snip>
-def _posterior_probabilities(observation_seq: List[int], hmm) -> NDArray[np.float64]:
-    """
-    Calculate posterior state probabilities by combining forward and backward.
-
-    Returns a matrix where rows are observations and columns are states.
-    Each entry [i,j] is the posterior probability of state j at observation i.
-    """
-    # YOUR CODE HERE
-    # <snip>
-    forward = _build_forward_matrix(observation_seq, hmm)
-    backward = _build_backward_matrix(observation_seq, hmm)
-
-    # Element-wise multiplication
-    posterior = forward * backward
-
-    # Normalize each row to sum to 1.0
-    row_sums = np.sum(posterior, axis=1, keepdims=True)
-    posterior = posterior / row_sums
-
-    return posterior
-    # </snip>
 
 def _build_forward_matrix(observation_seq: List[int], hmm) -> NDArray[np.float64]:
     """
@@ -73,52 +46,6 @@ def _build_forward_matrix(observation_seq: List[int], hmm) -> NDArray[np.float64
     Each entry is normalized to avoid underflow.
     """
     # YOUR CODE HERE
-    # <snip>
-
-    number_of_observations = len(observation_seq)
-    number_of_states = hmm.num_states
-
-    # Initialize forward matrix
-    forward_matrix = np.zeros((number_of_observations, number_of_states))
-
-    # First observation: initial state probs * emission probs
-    forward_matrix[0] = (
-        np.array(hmm.initial_state_probs) *
-        np.array(hmm.emission_matrix)[observation_seq[0]]
-    )
-    # Normalize to avoid underflow
-    total = np.sum(forward_matrix[0])
-    if total > 0:
-        forward_matrix[0] = forward_matrix[0] / total
-    else:
-        # Handle impossible observation
-        forward_matrix[0] = np.nan
-
-    # Fill in the rest of the matrix
-    for observation_index in range(1, number_of_observations):
-        # For each state, compute:
-        # emission_prob * sum(prev_state_prob * transition_prob)
-        emission_probs = np.array(
-            hmm.emission_matrix)[observation_seq[observation_index]]
-
-        # Compute all possible transitions from previous states
-        # prev_probs * transition_matrix gives matrix where:
-        # - rows are source states
-        # - columns are destination states
-        # We take the sum over source states for each destination
-        prev_probs = forward_matrix[observation_index - 1]
-        transition_matrix = np.array(hmm.transition_matrix)
-
-        # Multiply each row of transition matrix by corresponding prev prob
-        transitions = prev_probs[:, np.newaxis] * transition_matrix
-
-        # Take sum over source states (rows) for each dest state (column)
-        sum_transitions = np.sum(transitions, axis=0)
-
-        # Multiply by emission probabilities
-        forward_matrix[observation_index] = emission_probs * sum_transitions
-  
-        # </snip>
   
         # Normalize to avoid underflow
         total = np.sum(forward_matrix[observation_index])
@@ -140,40 +67,6 @@ def _build_backward_matrix(observation_seq: List[int], hmm) -> NDArray[np.float6
     Each entry is normalized to avoid underflow.
     """
     # YOUR CODE HERE
-    # <snip>
-    number_of_observations = len(observation_seq)
-    number_of_states = hmm.num_states
-
-    # Initialize backward matrix
-    backward_matrix = np.zeros((number_of_observations, number_of_states))
-
-    # Last observation: uniform distribution (all states equally likely to end)
-    backward_matrix[number_of_observations - 1] = np.ones(number_of_states) / number_of_states
-
-    # Fill in the rest of the matrix, working backwards
-    for observation_index in range(number_of_observations - 2, -1, -1):
-        # For each state at position observation_index, compute:
-        # sum(transition_prob * backward[observation_index+1] * emission[observation_index+1])
-
-        transition_matrix = np.array(hmm.transition_matrix)
-        next_backward = backward_matrix[observation_index + 1]
-        next_emission = np.array(hmm.emission_matrix)[observation_seq[observation_index + 1]]
-
-        # For each source state, sum over all destination states:
-        # sum_j (transition[i,j] * backward[observation_index+1, j] * emission[observation_index+1, j])
-        for state_idx in range(number_of_states):
-            backward_matrix[observation_index, state_idx] = np.sum(
-                transition_matrix[state_idx, :] * next_backward * next_emission
-            )
-
-        # Normalize to avoid underflow
-        total = np.sum(backward_matrix[observation_index])
-        if total > 0:
-            backward_matrix[observation_index] = backward_matrix[observation_index] / total
-        else:
-            # Handle edge case
-            backward_matrix[observation_index] = np.nan
-    #</snip>
     return backward_matrix
 
 
