@@ -34,12 +34,12 @@ def posterior_decode(observation_seq: List[int], hmm) -> List[str]:
        forward and backward matrices, normalized at each observation.
     """
     # YOUR CODE HERE
-    posterior = posterior_probabilities(observation_seq,hmm)
+    posterior = _posterior_probabilities(observation_seq,hmm)
     indices = np.nanargmax(posterior,axis=1)
 
     return [hmm.states[i] for i in indices]
 
-def posterior_probabilities(observation_seq: List[int], hmm) -> NDArray[np.float64]:
+def _posterior_probabilities(observation_seq: List[int], hmm) -> NDArray[np.float64]:
     
     forward = _build_forward_matrix(observation_seq,hmm)
     backward = _build_backward_matrix(observation_seq,hmm)
