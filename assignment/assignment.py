@@ -34,8 +34,24 @@ def posterior_decode(observation_seq: List[int], hmm) -> List[str]:
        forward and backward matrices, normalized at each observation.
     """
     # YOUR CODE HERE
+    posterior = posterior_probabilities(observation_seq,hmm)
+    indices = np.nanargmax(posterior,axis=1)
 
-    # DEFINE _posterior_probabilites here
+    return [hmm.states[i] for i in indices]
+
+def posterior_probabilities(observation_seq: List[int], hmm) -> NDArray[np.float64]:
+    
+    forward = _build_forward_matrix(observation_seq,hmm)
+    backward = _build_backward_matrix(observation_seq,hmm)
+
+    num_obs = len(observation_seq)
+    num_states = hmm.num_states
+
+    posterior = forward*backward
+    row_sums = np.sum(posterior, axis=1, keepdims=True)
+    posterior = np.divide(posterior, row_sums, out=np.zeros_like(posterior))
+
+    return posterior
 
 def _build_forward_matrix(observation_seq: List[int], hmm) -> NDArray[np.float64]:
     """
@@ -46,14 +62,46 @@ def _build_forward_matrix(observation_seq: List[int], hmm) -> NDArray[np.float64
     Each entry is normalized to avoid underflow.
     """
     # YOUR CODE HERE
-  
+
+    num_observations = len(observation_seq)
+    num_states = hmm.num_states
+    forward_matrix = np.zeros((num_observations,num_states))
+
+    #first row of matrix is first obs. normalized values...
+
+    first_obs = observation_seq[0]
+    for x in range(num_states):
+        
+        if first_obs < len(hmm.emission_matrix):
+            forward_matrix[0,x] = hmm.initial_state_probs[x] * hmm.emission_matrix[first_obs][x]
+        else:
+            forward_matrix[0,x] = 0.0
+    
+    norm_sum = np.sum(forward_matrix[0,:])
+    if norm_sum > 0:
+        forward_matrix[0,:] /= norm_sum
+    else:
+        
+        forward_matrix[0,:] = 0.0
+    
+    
+    for y in range(1,num_observations):
+        obs = observation_seq[y]
+        
+        for j in range(num_states):
+            total = 0.0
+            for i in range(num_states):
+                total+= forward_matrix[y-1,i] * hmm.transition_matrix[i][j]
+            forward_matrix[y,j] = hmm.emission_matrix[obs][j] * total
+
         # Normalize to avoid underflow
-        total = np.sum(forward_matrix[observation_index])
-        if total > 0:
-            forward_matrix[observation_index] = forward_matrix[observation_index] / total
+        norm_sum = np.sum(forward_matrix[y,:])
+        
+        if norm_sum > 0:
+            forward_matrix[y,:] /=  norm_sum
         else:
             # Handle impossible observation
-            forward_matrix[observation_index] = np.nan
+            forward_matrix[y,:] = np.nan
  
     return forward_matrix
 
@@ -67,6 +115,28 @@ def _build_backward_matrix(observation_seq: List[int], hmm) -> NDArray[np.float6
     Each entry is normalized to avoid underflow.
     """
     # YOUR CODE HERE
+    num_observations = len(observation_seq)
+    num_states = hmm.num_states
+    backward_matrix = np.zeros((num_observations,num_states))
+    
+    backward_matrix[-1,:] = 1.0 
+    norm_sum = np.sum(backward_matrix[-1,:])
+    backward_matrix[-1,:] /= norm_sum
+    
+    for y in range(num_observations-2,-1,-1):
+        next_ob = observation_seq[y+1]
+        for i in range(num_states):
+            total = 0
+            for j in range(num_states):
+                total += hmm.transition_matrix[i][j] * hmm.emission_matrix[next_ob][j] * backward_matrix[y+1][j]
+            backward_matrix[y,i] = total
+
+        norm_sum = np.sum(backward_matrix[y,:])
+        if norm_sum > 0:
+            backward_matrix[y,:] /= norm_sum
+        else:
+            backward_matrix[y,:] = 0.0
+
     return backward_matrix
 
 
